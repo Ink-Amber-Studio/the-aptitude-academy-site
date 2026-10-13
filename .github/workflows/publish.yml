@@ -126,6 +126,9 @@ jobs:
   publish:
     name: Publish protected source and CMS content
     needs: build
+    # A push has no CMS-head job, so evaluate this explicitly rather than
+    # inheriting GitHub's default skip from that intentionally skipped job.
+    if: ${{ always() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check whether the restricted publisher is enabled
