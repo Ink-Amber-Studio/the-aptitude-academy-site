@@ -64,7 +64,7 @@ jobs:
           repository: Ink-Amber-Studio/the-aptitude-academy-content
           ref: main
           path: cms-content
-          ssh-key: ${{ secrets.TAA_CONTENT_READ_KEY }}
+          token: ${{ secrets.TAA_CONTENT_READ_TOKEN }}
 
       - name: Set up Node
         if: steps.readiness.outputs.enabled == 'true'
