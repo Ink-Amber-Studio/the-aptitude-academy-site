@@ -13,9 +13,6 @@ on:
 permissions:
   contents: read
 
-env:
-  TAA_PIPELINE_READY: ${{ secrets.TAA_PIPELINE_READY }}
-
 concurrency:
   group: taa-production-publish
   cancel-in-progress: false
@@ -42,16 +39,26 @@ jobs:
   publish:
     name: Publish protected source and CMS content
     needs: build
-    # This remains skipped until restricted cPanel and content-read credentials
-    # are installed. A first source push therefore verifies cleanly instead of
-    # attempting an incomplete deployment.
-    if: ${{ env.TAA_PIPELINE_READY == 'true' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Check whether the restricted publisher is enabled
+        id: readiness
+        env:
+          TAA_PIPELINE_READY: ${{ secrets.TAA_PIPELINE_READY }}
+        run: |
+          if [ "$TAA_PIPELINE_READY" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Publisher is intentionally disabled until its restricted credentials are installed."
+          fi
+
       - name: Check out the protected website source
+        if: steps.readiness.outputs.enabled == 'true'
         uses: actions/checkout@v4
 
       - name: Check out published CMS content only
+        if: steps.readiness.outputs.enabled == 'true'
         uses: actions/checkout@v4
         with:
           repository: Ink-Amber-Studio/the-aptitude-academy-content
@@ -60,12 +67,14 @@ jobs:
           ssh-key: ${{ secrets.TAA_CONTENT_READ_KEY }}
 
       - name: Set up Node
+        if: steps.readiness.outputs.enabled == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
       - name: Build the crawlable public release package
+        if: steps.readiness.outputs.enabled == 'true'
         env:
           TAA_CONTENT_ROOT: ${{ github.workspace }}/cms-content
         run: |
@@ -73,11 +82,13 @@ jobs:
           npm run package:launch
 
       - name: Install the FTPS publisher
+        if: steps.readiness.outputs.enabled == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install --yes lftp
 
       - name: Mirror the reviewed package to the cPanel document root
+        if: steps.readiness.outputs.enabled == 'true'
         env:
           TAA_FTPS_SERVER: ${{ secrets.TAA_FTPS_SERVER }}
           TAA_FTPS_USERNAME: ${{ secrets.TAA_FTPS_USERNAME }}
