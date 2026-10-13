@@ -11,7 +11,7 @@ var PostPreview = createClass({
     var summary = data.get('summary') || 'Add a short introduction to help readers understand what this post is about.';
     var author = data.get('author') || 'The Aptitude Academy';
     return h('article', { className: 'taa-preview' },
-      h('p', { className: 'taa-preview-kicker' }, 'The Aptitude Academy / Field notes'),
+      h('p', { className: 'taa-preview-kicker' }, 'The Aptitude Academy / Blog'),
       h('h1', {}, title),
       h('p', { className: 'taa-preview-meta' }, author),
       h('p', { className: 'taa-preview-summary' }, summary),
