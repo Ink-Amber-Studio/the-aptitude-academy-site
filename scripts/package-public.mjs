@@ -80,8 +80,8 @@ async function buildPackage() {
   await copy('.htaccess');
   await copy('output.css');
   for (const file of [
-    'taa-logo.png', 'taa-icon.png', 'new-opportunities.webp', 'learning-together.webp',
-    'learning-montage.webp', 'learner-group.webp', 'cabin-latin-400-normal.woff2',
+    'taa-logo.png', 'taa-icon.png', 'new-opportunities-v2.png', 'learning-together-v2.png',
+    'learning-montage.webp', 'learner-group-v2.png', 'cabin-latin-400-normal.woff2',
     'cabin-latin-600-normal.woff2', 'cabin-latin-700-normal.woff2', 'Cabin-LICENSE.txt', 'og-image.png',
   ]) await copy(`assets/${file}`);
   for (const file of ['site.js', 'hero-grid.js', 'motion.js', 'motion-boot.js', 'vendor/gsap.min.js', 'vendor/ScrollTrigger.min.js', 'vendor/NOTICE.txt']) {
