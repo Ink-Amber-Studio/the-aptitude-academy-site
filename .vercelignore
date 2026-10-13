@@ -1,0 +1,35 @@
+node_modules
+Brand assets
+temporary screenshots
+.env*
+AGENTS.md
+CLAUDE.md
+design-system.md
+qa-workflow.md
+vision-models.md
+image-generation.md
+tier-scope.md
+delivery-workflow.md
+client-handover.md
+PROGRESS.md
+components-used.md
+services-used.md
+pre-build.md
+# This file is retained as defence in depth even though TAA deploys to cPanel.
+# The two build scripts are source-controlled; all other scripts remain local.
+scripts/*
+!scripts/build-blog.mjs
+!scripts/package-public.mjs
+cms-starter/auth-worker
+cms-starter/content/*
+!cms-starter/content/posts/
+!cms-starter/content/posts/.gitkeep
+blog/.generated-posts.json
+*.log
+assets/brief-*.png
+local-notes
+Photos to enhance
+output
+tmp
+*.docx
+create_*.py

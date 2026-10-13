@@ -1,0 +1,22 @@
+{
+  "name": "the-aptitude-academy",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "concurrently --kill-others -n CSS,WEB \"npm run dev:css\" \"node serve.mjs\"",
+    "dev:css": "tailwindcss -i ./input.css -o ./output.css --watch",
+    "build:blog": "node scripts/build-blog.mjs",
+    "build": "npm run build:blog && tailwindcss -i ./input.css -o ./output.css --minify",
+    "package:public": "npm run build && node scripts/package-public.mjs",
+    "package:launch": "npm run build && node scripts/package-public.mjs --release=launch"
+  },
+  "devDependencies": {
+    "@fontsource/cabin": "^5.2.0",
+    "autoprefixer": "^10.6.1",
+    "concurrently": "^9.1.0",
+    "cssnano": "^6.1.2",
+    "markdown-it": "^15.0.2",
+    "tailwindcss": "^3.4.17",
+    "yaml": "^2.9.1"
+  }
+}

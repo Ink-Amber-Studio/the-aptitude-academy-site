@@ -1,0 +1,86 @@
+name: Build and publish TAA
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Decap publishes to the separate content repository. This protected
+    # source repository polls it every 15 minutes without giving that editor
+    # repository any deployment credential.
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: taa-production-publish
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Verify a releasable public output
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the protected website source
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build a local-content release check
+        run: |
+          npm ci
+          npm run package:launch
+
+  publish:
+    name: Publish protected source and CMS content
+    needs: build
+    # This remains skipped until restricted cPanel and content-read credentials
+    # are installed. A first source push therefore verifies cleanly instead of
+    # attempting an incomplete deployment.
+    if: ${{ secrets.TAA_PIPELINE_READY == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the protected website source
+        uses: actions/checkout@v4
+
+      - name: Check out published CMS content only
+        uses: actions/checkout@v4
+        with:
+          repository: Ink-Amber-Studio/the-aptitude-academy-content
+          ref: main
+          path: cms-content
+          ssh-key: ${{ secrets.TAA_CONTENT_READ_KEY }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build the crawlable public release package
+        env:
+          TAA_CONTENT_ROOT: ${{ github.workspace }}/cms-content
+        run: |
+          npm ci
+          npm run package:launch
+
+      - name: Install the FTPS publisher
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes lftp
+
+      - name: Mirror the reviewed package to the cPanel document root
+        env:
+          TAA_FTPS_SERVER: ${{ secrets.TAA_FTPS_SERVER }}
+          TAA_FTPS_USERNAME: ${{ secrets.TAA_FTPS_USERNAME }}
+          TAA_FTPS_PASSWORD: ${{ secrets.TAA_FTPS_PASSWORD }}
+        run: |
+          set -euo pipefail
+          public_dir="$(find output -maxdepth 1 -type d -name 'public-*' -print -quit)"
+          test -n "$public_dir"
+          lftp -c "set cmd:fail-exit true; set net:max-retries 2; set net:timeout 30; set ssl:verify-certificate yes; open -u \"${TAA_FTPS_USERNAME}\",\"${TAA_FTPS_PASSWORD}\" \"${TAA_FTPS_SERVER}\"; mirror --reverse --delete --verbose \"${public_dir}\" /; bye"

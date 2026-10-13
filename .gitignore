@@ -1,0 +1,37 @@
+node_modules/
+output.css
+.env
+.env.*
+temporary screenshots/
+Brand assets/
+AGENTS.md
+CLAUDE.md
+design-system.md
+qa-workflow.md
+vision-models.md
+image-generation.md
+tier-scope.md
+delivery-workflow.md
+client-handover.md
+PROGRESS.md
+components-used.md
+services-used.md
+pre-build.md
+# Keep the release builder with the website source. Other scripts are local
+# studio tooling and must not enter the client source repository.
+scripts/*
+!scripts/build-blog.mjs
+!scripts/package-public.mjs
+cms-starter/auth-worker/
+cms-starter/content/*
+!cms-starter/content/posts/
+!cms-starter/content/posts/.gitkeep
+blog/.generated-posts.json
+*.log
+assets/brief-*.png
+local-notes/
+Photos to enhance/
+output/
+tmp/
+*.docx
+create_*.py

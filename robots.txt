@@ -1,0 +1,6 @@
+# The release pack generates this file with the correct review or launch rule.
+# This template documents the intended production policy.
+User-agent: *
+Disallow: /admin/
+
+Sitemap: https://www.theaptitudeacademy.co.za/sitemap.xml

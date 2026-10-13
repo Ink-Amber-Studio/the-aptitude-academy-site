@@ -1,0 +1,44 @@
+# Local visual test configuration only. It cannot read or write the live GitHub repository.
+# Replace test-repo with the protected GitHub OAuth configuration only at the approved integration step.
+backend:
+  name: test-repo
+  branch: main
+
+publish_mode: editorial_workflow
+media_folder: media/uploads
+public_folder: /media/uploads
+logo:
+  src: /assets/taa-logo.png
+show_preview_links: false
+slug:
+  encoding: ascii
+  clean_accents: true
+
+collections:
+  - name: posts
+    label: Blog posts
+    label_singular: Blog post
+    description: Create, preview and publish The Aptitude Academy's articles. Start with a clear title and short summary.
+    folder: content/posts
+    create: true
+    slug: '{{year}}-{{month}}-{{day}}-{{slug}}'
+    format: frontmatter
+    summary: '{{title}} — {{date}}'
+    fields:
+      - { label: Title, name: title, widget: string, hint: Use a clear, useful title. }
+      - { label: Short summary, name: summary, widget: text, hint: This appears on the blog page and in search results. }
+      - { label: Publish date, name: date, widget: datetime, date_format: 'YYYY-MM-DD', time_format: false, picker_utc: true }
+      - { label: Author, name: author, widget: string, required: false, hint: Leave blank to use The Aptitude Academy. }
+      - label: Cover image
+        name: cover
+        widget: image
+        required: false
+        choose_url: false
+        hint: Use a clear, genuine image that supports the article. Maximum 8 MB.
+        media_library:
+          config:
+            max_file_size: 8388608
+      - { label: Image description, name: cover_alt, widget: string, required: false, hint: Describe the image for people who cannot see it. }
+      - { label: Search title, name: seo_title, widget: string, required: false, hint: Optional. Leave blank to reuse the post title. }
+      - { label: Search description, name: seo_description, widget: text, required: false, hint: Optional. Leave blank to reuse the summary. }
+      - { label: Article, name: body, widget: markdown, hint: Add headings and short paragraphs to keep the article easy to scan. }
