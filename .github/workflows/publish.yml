@@ -9,6 +9,12 @@ on:
     # repository any deployment credential.
     - cron: '*/15 * * * *'
   workflow_dispatch:
+    inputs:
+      verify_credentials:
+        description: 'Run the read-only CMS and FTPS connection check (does not publish files).'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -35,6 +41,41 @@ jobs:
         run: |
           npm ci
           npm run package:launch
+
+  verify-credentials:
+    name: Verify protected CMS and FTPS access
+    # This job can run only when manually requested with its explicit safe input.
+    # It lists the restricted FTPS root; it never writes, deletes, or deploys.
+    if: github.event_name == 'workflow_dispatch' && inputs.verify_credentials
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the protected website source
+        uses: actions/checkout@v4
+
+      - name: Check out published CMS content read-only
+        uses: actions/checkout@v4
+        with:
+          repository: Ink-Amber-Studio/the-aptitude-academy-content
+          ref: main
+          path: cms-content
+          token: ${{ secrets.TAA_CONTENT_READ_TOKEN }}
+
+      - name: Install the FTPS client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes lftp
+
+      - name: Verify restricted FTPS root without publishing
+        env:
+          TAA_FTPS_SERVER: ${{ secrets.TAA_FTPS_SERVER }}
+          TAA_FTPS_USERNAME: ${{ secrets.TAA_FTPS_USERNAME }}
+          TAA_FTPS_PASSWORD: ${{ secrets.TAA_FTPS_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$TAA_FTPS_SERVER"
+          test -n "$TAA_FTPS_USERNAME"
+          test -n "$TAA_FTPS_PASSWORD"
+          lftp -c "set cmd:fail-exit true; set net:max-retries 2; set net:timeout 30; set ssl:verify-certificate yes; open -u \"${TAA_FTPS_USERNAME}\",\"${TAA_FTPS_PASSWORD}\" \"${TAA_FTPS_SERVER}\"; cls; bye"
 
   publish:
     name: Publish protected source and CMS content
