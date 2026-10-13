@@ -65,15 +65,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes lftp
 
-      - name: Identify the verified FTPS certificate name
-        env:
-          TAA_FTPS_SERVER: ${{ secrets.TAA_FTPS_SERVER }}
-        run: |
-          set -euo pipefail
-          ftps_host="${TAA_FTPS_SERVER#ftp://}"
-          ftps_host="${ftps_host%%:*}"
-          openssl s_client -connect "${ftps_host}:21" -starttls ftp -servername "${ftps_host}" </dev/null 2>/dev/null | openssl x509 -noout -subject -ext subjectAltName
-
       - name: Verify restricted FTPS root without publishing
         env:
           TAA_FTPS_SERVER: ${{ secrets.TAA_FTPS_SERVER }}
