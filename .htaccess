@@ -1,0 +1,10 @@
+# Always revalidate HTML so a browser does not retain an older page after a
+# release. Versioned static assets retain normal cache behaviour.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(?:html?)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+  <Files "index.html">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </Files>
+</IfModule>

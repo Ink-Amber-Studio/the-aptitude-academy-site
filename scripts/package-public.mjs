@@ -77,6 +77,7 @@ async function buildPackage() {
   await mkdir(publicRoot);
 
   await copyPublicHtml('index.html');
+  await copy('.htaccess');
   await copy('output.css');
   for (const file of [
     'taa-logo.png', 'taa-icon.png', 'new-opportunities.webp', 'learning-together.webp',
