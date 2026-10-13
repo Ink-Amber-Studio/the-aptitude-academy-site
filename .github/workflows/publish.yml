@@ -75,7 +75,7 @@ jobs:
           test -n "$TAA_FTPS_SERVER"
           test -n "$TAA_FTPS_USERNAME"
           test -n "$TAA_FTPS_PASSWORD"
-          lftp -c "set cmd:fail-exit true; set net:max-retries 2; set net:timeout 30; set ssl:verify-certificate yes; open -u \"${TAA_FTPS_USERNAME}\",\"${TAA_FTPS_PASSWORD}\" \"${TAA_FTPS_SERVER}\"; cls; bye"
+          lftp -c "set cmd:fail-exit true; set net:max-retries 2; set net:timeout 30; set ssl:verify-certificate yes; set ftp:ssl-force true; set ftp:ssl-protect-data true; open -u \"${TAA_FTPS_USERNAME}\",\"${TAA_FTPS_PASSWORD}\" \"${TAA_FTPS_SERVER}\"; cls; bye"
 
   publish:
     name: Publish protected source and CMS content
@@ -138,4 +138,4 @@ jobs:
           set -euo pipefail
           public_dir="$(find output -maxdepth 1 -type d -name 'public-*' -print -quit)"
           test -n "$public_dir"
-          lftp -c "set cmd:fail-exit true; set net:max-retries 2; set net:timeout 30; set ssl:verify-certificate yes; open -u \"${TAA_FTPS_USERNAME}\",\"${TAA_FTPS_PASSWORD}\" \"${TAA_FTPS_SERVER}\"; mirror --reverse --delete --verbose \"${public_dir}\" /; bye"
+          lftp -c "set cmd:fail-exit true; set net:max-retries 2; set net:timeout 30; set ssl:verify-certificate yes; set ftp:ssl-force true; set ftp:ssl-protect-data true; open -u \"${TAA_FTPS_USERNAME}\",\"${TAA_FTPS_PASSWORD}\" \"${TAA_FTPS_SERVER}\"; mirror --reverse --delete --verbose \"${public_dir}\" /; bye"
