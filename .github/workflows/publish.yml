@@ -13,6 +13,9 @@ on:
 permissions:
   contents: read
 
+env:
+  TAA_PIPELINE_READY: ${{ secrets.TAA_PIPELINE_READY }}
+
 concurrency:
   group: taa-production-publish
   cancel-in-progress: false
@@ -42,7 +45,7 @@ jobs:
     # This remains skipped until restricted cPanel and content-read credentials
     # are installed. A first source push therefore verifies cleanly instead of
     # attempting an incomplete deployment.
-    if: ${{ secrets.TAA_PIPELINE_READY == 'true' }}
+    if: ${{ env.TAA_PIPELINE_READY == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Check out the protected website source
