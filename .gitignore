@@ -23,6 +23,7 @@ scripts/*
 !scripts/build-blog.mjs
 !scripts/package-public.mjs
 cms-starter/auth-worker/
+forms-worker/
 cms-starter/content/*
 !cms-starter/content/posts/
 !cms-starter/content/posts/.gitkeep

@@ -20,7 +20,6 @@ document.addEventListener('click', event => { if (!event.target.closest('header'
 matchMedia('(min-width: 1024px)').addEventListener('change', event => { if (event.matches) closeMenu(); });
 
 const tabs = [...document.querySelectorAll('[role="tab"]')];
-const handoff = document.querySelector('#form-handoff');
 function selectAudience(audience, focus = false) {
   tabs.forEach(tab => {
     const selected = tab.id === 'tab-' + audience;
@@ -29,7 +28,6 @@ function selectAudience(audience, focus = false) {
     document.getElementById(tab.getAttribute('aria-controls')).hidden = !selected;
     if (selected && focus) tab.focus();
   });
-  handoff.hidden = true;
 }
 tabs.forEach((tab, index) => {
   tab.addEventListener('click', () => selectAudience(tab.id.replace('tab-', '')));
@@ -52,17 +50,28 @@ function validateCV() {
   if (!/\.(pdf|doc|docx)$/i.test(file.name)) cv.setCustomValidity('Choose a PDF, DOC or DOCX file.');
   else if (file.size > 5 * 1024 * 1024) cv.setCustomValidity('Your CV is larger than 5 MB. Please choose a smaller file.');
   else if (file.size === 0) cv.setCustomValidity('This file is empty. Please choose your CV again.');
-  status.textContent = cv.validationMessage || `${file.name} selected (${Math.max(1, Math.round(file.size / 1024))} KB). Attach it when you send your message.`;
+  status.textContent = cv.validationMessage || `${file.name} selected (${Math.max(1, Math.round(file.size / 1024))} KB).`;
 }
 cv.addEventListener('change', validateCV);
 
-// Message composition/handoff adapted from FitnessIcon/js/enquiry.js.
-// This direct-contact route never claims to have sent or uploaded a submission.
+const formEndpoint = 'https://taa-form-relay.keethan.workers.dev';
+const turnstileSiteKey = '0x4AAAAAAFWVKSlbtwzr_33A';
 const labels = { name: 'Name', company: 'Company', email: 'Email', phone: 'Phone / WhatsApp', location: 'Town / city', education: 'Education', message: 'Message', unemployed: 'Currently unemployed', consent: 'Consent' };
 document.querySelectorAll('form[data-enquiry]').forEach(form => {
-  form.querySelector('[type="submit"]').disabled = false;
-  // Without JS the forms are a direct-contact notice, never a GET containing personal data.
-  form.addEventListener('submit', event => {
+  const submit = form.querySelector('[type="submit"]');
+  const status = form.querySelector('[data-form-status]');
+  const setStatus = (message, isError = false) => {
+    status.textContent = message;
+    status.classList.toggle('text-brand-dark', isError);
+    status.classList.toggle('text-muted', !isError);
+  };
+  if (turnstileSiteKey && window.turnstile) {
+    form.querySelectorAll('[data-turnstile-container]').forEach(container => {
+      container.dataset.turnstileWidget = String(window.turnstile.render(container, { sitekey: turnstileSiteKey }));
+    });
+    submit.disabled = false;
+  }
+  form.addEventListener('submit', async event => {
     event.preventDefault();
     if (form.dataset.enquiry === 'learner') validateCV();
     form.querySelectorAll('[data-field-error]').forEach(el => el.remove());
@@ -103,32 +112,31 @@ document.querySelectorAll('form[data-enquiry]').forEach(form => {
         link.addEventListener('click', event => { event.preventDefault(); field.focus(); });
         item.append(link); list.append(item);
       });
-      summary.append(list); summary.focus(); handoff.hidden = true; return;
+      summary.append(list); summary.focus(); return;
     }
-    const title = form.dataset.enquiry === 'company' ? 'Company enquiry' : 'Learner expression of interest';
-    const lines = [title + ' — The Aptitude Academy', ''];
-    new FormData(form).forEach((value, key) => {
-      if (value instanceof File) { if (value.name) lines.push('CV selected: ' + value.name + ' (attach this file before sending)'); }
-      else lines.push((labels[key] || key) + ': ' + (value === 'on' ? 'Yes' : value.trim()));
-    });
-    const text = lines.join('\n');
-    document.querySelector('#handoff-message').value = text;
-    document.querySelector('#handoff-whatsapp').href = 'https://wa.me/27818058686?text=' + encodeURIComponent(text);
-    document.querySelector('#handoff-email').href = 'mailto:admin@theaptitudeacademy.co.za?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(text);
-    document.querySelector('#handoff-guidance').textContent = form.dataset.enquiry === 'learner'
-      ? 'Choose email or WhatsApp to send your details. Attach your CV in that app before sending.'
-      : 'Choose email or WhatsApp to send your details to The Aptitude Academy.';
-    document.querySelector('#copy-status').textContent = '';
-    handoff.hidden = false;
-    handoff.focus();
+    const payload = new FormData(form);
+    payload.set('form_type', form.dataset.enquiry);
+    if (!payload.get('cf-turnstile-response')) {
+      setStatus('Please complete the security check before sending.', true);
+      return;
+    }
+    submit.disabled = true;
+    setStatus('Sending securely…');
+    try {
+      const response = await fetch(formEndpoint, { method: 'POST', body: payload, headers: { Accept: 'application/json' } });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.ok) throw new Error('delivery failed');
+      form.reset();
+      if (form.dataset.enquiry === 'learner') validateCV();
+      setStatus(form.dataset.enquiry === 'learner' ? 'Thank you. Your registration and CV have been sent to The Aptitude Academy.' : 'Thank you. Your enquiry has been sent to The Aptitude Academy.');
+      if (window.turnstile) form.querySelectorAll('[data-turnstile-container]').forEach(container => window.turnstile.reset(container.dataset.turnstileWidget));
+    } catch {
+      setStatus('We could not send your form. Please try again or use the contact details on this page.', true);
+      if (window.turnstile) form.querySelectorAll('[data-turnstile-container]').forEach(container => window.turnstile.reset(container.dataset.turnstileWidget));
+    } finally {
+      submit.disabled = false;
+    }
   });
-  // Clear stale handoff details if the form changes, preserving entered data across tabs.
-  form.addEventListener('input', () => { handoff.hidden = true; });
-});
-document.querySelector('#copy-message').addEventListener('click', async () => {
-  const field = document.querySelector('#handoff-message');
-  try { await navigator.clipboard.writeText(field.value); document.querySelector('#copy-status').textContent = 'Message copied. Attach your CV separately if you are enquiring as a learner.'; }
-  catch { field.focus(); field.select(); document.querySelector('#copy-status').textContent = 'Select and copy the message above.'; }
 });
 
 const dialog = document.querySelector('#policy-dialog');
@@ -137,10 +145,10 @@ document.querySelectorAll('[data-policy]').forEach(button => button.addEventList
   document.querySelector('#policy-title').textContent = privacy ? 'Privacy notice' : 'Cookie notice';
   const paragraphs = privacy ? [
     'The Aptitude Academy uses the information you choose to send to answer company enquiries and consider learner interest in suitable opportunities. A learner message may include contact details, location, education and a CV. Sending an enquiry does not guarantee placement.',
-    'This page prepares your message in your browser. It does not send or store the form details or your CV on the website. You choose whether to send the message through your email or WhatsApp app, and attach your CV there. That service handles your message under its own privacy terms.',
+    'When you submit a form, a protected service checks that it is a genuine submission and securely delivers it to admin@theaptitudeacademy.co.za. Cloudflare Turnstile helps protect the forms from spam, and Resend processes email delivery on The Aptitude Academy’s behalf. The form relay does not keep its own copy after delivery.',
     'After you send a message, The Aptitude Academy receives it and is responsible for how it uses, shares and retains your information. To ask about your information or request a correction or deletion, contact admin@theaptitudeacademy.co.za.'
   ] : [
-    'This public website does not set analytics or advertising cookies. The contact options may open email or WhatsApp; those services have their own privacy and cookie practices.'
+    'This public website does not set analytics or advertising cookies. Cloudflare Turnstile is used to protect the forms and may process technically necessary browser data under Cloudflare’s privacy terms. Email and WhatsApp links remain subject to those services’ own privacy and cookie practices.'
   ];
   document.querySelector('#policy-content').replaceChildren(...paragraphs.map(value => {
     const paragraph = document.createElement('p');
